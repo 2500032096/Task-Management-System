@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management & Schedule Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- CSS Grid Shell Layout -->
+    <div class="dashboard-grid">
+
+        <!-- Grid Area 1: Sidebar -->
+        <aside class="sidebar">
+            <div class="logo"><i class="fa-solid fa-list-check"></i> TaskFlow</div>
+            <div class="user-profile">
+                <p>Logged in as:</p>
+                <strong id="user-display-name">User</strong>
+            </div>
+
+            <p class="sidebar-label">PROJECTS</p>
+            <ul class="nav-links" id="project-list">
+                <li class="active" data-project="All">All Projects</li>
+                <li data-project="Work">Work</li>
+                <li data-project="Personal">Personal</li>
+                <li data-project="Study">Study</li>
+            </ul>
+
+            <p class="sidebar-label">VIEWS</p>
+            <ul class="nav-links" id="view-list">
+                <li class="active" data-view="board"><i class="fa-solid fa-columns"></i> Kanban Board</li>
+                <li data-view="schedule"><i class="fa-solid fa-calendar-days"></i> Daily Schedule</li>
+                <li data-view="workflow"><i class="fa-solid fa-diagram-project"></i> Workflow Chart</li>
+            </ul>
+
+            <button id="logout-btn" class="btn secondary-btn">Log Out</button>
+        </aside>
+
+        <!-- Grid Area 2: Top Bar -->
+        <header class="topbar">
+            <h1 id="board-header">Task Board</h1>
+            <button id="open-modal-btn" class="btn primary-btn">+ New Task</button>
+        </header>
+
+        <!-- Grid Area 3: Main Dynamic Content -->
+        <main class="main-content">
+
+            <!-- VIEW 1: KANBAN BOARD (CSS Grid) -->
+            <div id="view-kanban-board" class="kanban-grid">
+                <div class="kanban-column" id="column-todo" data-status="todo">
+                    <h3>To Do</h3>
+                    <div class="task-list" id="list-todo"></div>
+                </div>
+
+                <div class="kanban-column" id="column-in-progress" data-status="in-progress">
+                    <h3>In Progress</h3>
+                    <div class="task-list" id="list-in-progress"></div>
+                </div>
+
+                <div class="kanban-column" id="column-completed" data-status="completed">
+                    <h3>Completed</h3>
+                    <div class="task-list" id="list-completed"></div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: DAY-BY-DAY SCHEDULE -->
+            <div id="view-schedule" class="schedule-container hidden">
+                <h2>Weekly Planner & Daily Schedule</h2>
+                <div class="schedule-grid" id="schedule-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- VIEW 3: TO-DO WORKFLOW CHART WITH DETAILED WORKS -->
+            <div id="view-workflow" class="workflow-container hidden">
+                <h2>Task Lifecycle & Interactive Workflow</h2>
+                <div class="workflow-diagram">
+
+                    <!-- Step 1: Creation -->
+                    <div class="wf-node start">
+                        <i class="fa-solid fa-square-plus"></i>
+                        <span>1. Create Task</span>
+                        <small>Click "+ New Task" to set title, project tag, priority, scheduled day & deadline.</small>
+                    </div>
+
+                    <div class="wf-arrow">↓</div>
+
+                    <!-- Step 2: Categorization -->
+                    <div class="wf-node action">
+                        <i class="fa-solid fa-filter"></i>
+                        <span>2. Organize & Filter</span>
+                        <small>Task enters 'To Do'. Filter by Work, Personal, or Study projects in the sidebar.</small>
+                    </div>
+
+                    <div class="wf-arrow">↓</div>
+
+                    <!-- Step 3: Review Strategy -->
+                    <div class="wf-node action">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span>3. Click Card for AI Hint</span>
+                        <small>Click any card to open Deadline Details & AI-generated execution strategy.</small>
+                    </div>
+
+                    <div class="wf-arrow">↓</div>
+
+                    <!-- Step 4: Decision Node -->
+                    <div class="wf-node decision">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                        <span>4. Start Execution?</span>
+                        <small>Drag and drop card across columns</small>
+                    </div>
+
+                    <!-- Step 5: Branching Options -->
+                    <div class="wf-split">
+
+                        <!-- Branch A: In Progress -->
+                        <div class="wf-branch">
+                            <span class="branch-label">Yes (In Progress)</span>
+                            <div class="wf-arrow">↓</div>
+                            <div class="wf-node active-step">
+                                <i class="fa-solid fa-spinner"></i>
+                                <span> Work Active</span>
+                                <small>Move card to 'In Progress' column while working on deliverables.</small>
+                            </div>
+                            <div class="wf-arrow">↓</div>
+                            <div class="wf-node success">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span> Complete Task</span>
+                                <small>Drag to 'Completed' column to finish work & auto-sync Daily Planner.</small>
+                            </div>
+                        </div>
+
+                        <!-- Branch B: Delete / Abandon -->
+                        <div class="wf-branch">
+                            <span class="branch-label">No / Delete</span>
+                            <div class="wf-arrow">↓</div>
+                            <div class="wf-node danger">
+                                <i class="fa-solid fa-trash-can"></i>
+                                <span> Remove Task</span>
+                                <small>Click '×' icon to delete task permanently from LocalStorage.</small>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- New Task Modal -->
+    <div class="modal-overlay" id="task-modal">
+        <div class="modal-content">
+            <h2>Create Task</h2>
+            <form id="task-form">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="task-title" required placeholder="Enter task title...">
+                </div>
+                <div class="form-group">
+                    <label>Project</label>
+                    <select id="task-project">
+                        <option value="Work">Work</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Study">Study</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="task-priority">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Scheduled Day</label>
+                    <select id="task-day">
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                        <option value="Sunday">Sunday</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Deadline</label>
+                    <input type="date" id="task-deadline" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="close-modal-btn" class="btn secondary-btn">Cancel</button>
+                    <button type="submit" class="btn primary-btn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Details & Completion Hint Modal -->
+    <div class="modal-overlay" id="details-modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <h2 id="details-title">Task Title</h2>
+                <button id="close-details-btn"
+                    style="border:none; background:none; font-size:1.4rem; cursor:pointer; color:#64748b;">&times;</button>
+            </div>
+
+            <div style="display: flex; gap: 8px; font-size: 0.8rem; margin-top: -8px;">
+                <span id="details-project"
+                    style="background:#e2e8f0; padding:2px 8px; border-radius:4px; font-weight:600;">Work</span>
+                <span id="details-priority"
+                    style="background:#fee2e2; color:#ef4444; padding:2px 8px; border-radius:4px; font-weight:600;">HIGH</span>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <label><i class="fa-solid fa-calendar"></i> Deadline & Day</label>
+                <p id="details-deadline" style="font-size:0.95rem; color:#0f172a; font-weight:600;"></p>
+            </div>
+
+            <div class="form-group"
+                style="background:#f8fafc; padding:12px; border-radius:6px; border:1px solid #e2e8f0;">
+                <label style="color:#2563eb;"><i class="fa-solid fa-lightbulb"></i> AI Completion Hint &
+                    Strategy</label>
+                <p id="details-hint" style="font-size:0.88rem; color:#334155; line-height:1.4; margin-top:4px;"></p>
+            </div>
+
+            <div class="form-actions" style="margin-top: 8px;">
+                <button id="close-details-bottom-btn" class="btn primary-btn">Got It</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html> index.html
