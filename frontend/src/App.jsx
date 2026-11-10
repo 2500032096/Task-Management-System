@@ -1,327 +1,441 @@
-import React, { useState, useEffect } from 'react';
-import './App.css'; // Assuming your styles are imported here
+import React, { useState, useEffect } from "react";
+import "./App.css";
 
-export default function App() {
-  // Session & User Check
-  const [activeUser, setActiveUser] = useState(null);
-  
-  // App States
-  const [tasks, setTasks] = useState([]);
-  const [selectedProject, setSelectedProject] = useState('All');
-  const [currentView, setCurrentView] = useState('board');
-
-  // Modals
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
-
-  // Form State
-  const [newTitle, setNewTitle] = useState('');
-  const [newProject, setNewProject] = useState('Work');
-  const [newStatus, setNewStatus] = useState('todo');
-  const [newPriority, setNewPriority] = useState('medium');
-  const [newDay, setNewDay] = useState('Monday');
-  const [newDeadline, setNewDeadline] = useState('');
-
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-  // Initialize Session & Default Seed Tasks
-  useEffect(() => {
-    const session = JSON.parse(localStorage.getItem('active_session'));
-    if (!session) {
-      window.location.href = 'auth.html';
-    } else {
-      setActiveUser(session);
-    }
-
-    const defaultTasks = [
-      { id: 'w1', title: 'Design CSS Grid Wireframe Layout', project: 'Work', priority: 'high', day: 'Monday', deadline: '2026-10-05', status: 'todo' },
-      { id: 'w2', title: 'Write API Documentation Report', project: 'Work', priority: 'medium', day: 'Tuesday', deadline: '2026-10-06', status: 'todo' },
-      { id: 'w3', title: 'Fix Authentication LocalStorage Bug', project: 'Work', priority: 'high', day: 'Wednesday', deadline: '2026-10-07', status: 'in-progress' },
-      { id: 'p1', title: 'Schedule Annual Health Checkup', project: 'Personal', priority: 'medium', day: 'Monday', deadline: '2026-10-05', status: 'todo' },
-      { id: 'p3', title: 'Order Fitness Training Equipment', project: 'Personal', priority: 'low', day: 'Wednesday', deadline: '2026-10-07', status: 'in-progress' },
-      { id: 's1', title: 'Study Data Structures and Algorithms', project: 'Study', priority: 'high', day: 'Monday', deadline: '2026-10-05', status: 'todo' },
-      { id: 's3', title: 'Prepare Presentation Slides for Class', project: 'Study', priority: 'medium', day: 'Wednesday', deadline: '2026-10-07', status: 'in-progress' }
-    ];
-
-    const saved = localStorage.getItem(`tasks_${session?.email}`);
-    if (saved) {
-      setTasks(JSON.parse(saved));
-    } else {
-      setTasks(defaultTasks);
-      localStorage.setItem(`tasks_${session?.email}`, JSON.stringify(defaultTasks));
-    }
-  }, []);
-
-  const saveTasksToStorage = (updatedTasks) => {
-    setTasks(updatedTasks);
-    if (activeUser) {
-      localStorage.setItem(`tasks_${activeUser.email}`, JSON.stringify(updatedTasks));
-    }
-  };
-
-  // Dynamic Hint Engine
-  const getTaskHint = (title, project) => {
-    const t = title.toLowerCase().trim();
-    if (t.includes('css') || t.includes('grid') || t.includes('style')) {
-      return `Strategy for "${title}": Define CSS layout grid columns, set gap spacing, and test responsive design across mobile/desktop screen widths.`;
-    }
-    if (t.includes('bug') || t.includes('fix') || t.includes('auth')) {
-      return `Strategy for "${title}": Isolate reproducing steps, inspect local storage keys in Browser Developer Tools, and verify correct user session parsing.`;
-    }
-    if (t.includes('report') || t.includes('document') || t.includes('api')) {
-      return `Strategy for "${title}": Create a structured outline using bullet points, detail all request/response schemas, and include practical code samples.`;
-    }
-    if (t.includes('study') || t.includes('read') || t.includes('notes') || t.includes('learning')) {
-      return `Strategy for "${title}": Utilize 25-minute Pomodoro focus intervals. Write summary notes for each chapter and test retention with practice questions.`;
-    }
-    return `Execution Strategy for "${title}": Divide this ${project} task into 2-3 step-by-step milestones. Focus on completing core tasks first before finalizing.`;
-  };
-
-  // Task Submission Handler
-  const handleCreateTask = (e) => {
-    e.preventDefault();
-    const newTask = {
-      id: 't_' + Date.now(),
-      title: newTitle,
-      project: newProject,
-      priority: newPriority,
-      day: newDay,
-      deadline: newDeadline,
-      status: newStatus
-    };
-
-    saveTasksToStorage([...tasks, newTask]);
-    setNewTitle('');
-    setNewDeadline('');
-    setIsCreateModalOpen(false);
-  };
-
-  // Delete Task
-  const handleDeleteTask = (e, id) => {
-    e.stopPropagation();
-    const updated = tasks.filter(t => t.id !== id);
-    saveTasksToStorage(updated);
-  };
-
-  // Drag and Drop Handler
-  const handleDrop = (e, targetStatus) => {
-    e.preventDefault();
-    const taskId = e.dataTransfer.getData('text/plain');
-    const updated = tasks.map(t => t.id === taskId ? { ...t, status: targetStatus } : t);
-    saveTasksToStorage(updated);
-  };
-
-  const filteredTasks = tasks.filter(task => {
-    return selectedProject === 'All' || task.project === selectedProject;
+function App() {
+  // View State: "login", "register", or "dashboard"
+  const [view, setView] = useState(() => {
+    return localStorage.getItem("taskflow_active_session") ? "dashboard" : "login";
   });
 
-  if (!activeUser) return null;
+  const [currentUser, setCurrentUser] = useState(() => {
+    const session = localStorage.getItem("taskflow_active_session");
+    return session ? JSON.parse(session) : null;
+  });
 
-  return (
-    <div className="app-container">
-      {/* Sidebar Navigation */}
-      <aside className="sidebar">
-        <div className="brand">
-          <h2>TaskFlow</h2>
+  // Auth Inputs
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authName, setAuthName] = useState("");
+
+  // Task State
+  const [tasks, setTasks] = useState([]);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("Medium");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const [loading, setLoading] = useState(false);
+
+  // Live Date and Time State
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  useEffect(() => {
+    // Update the clock every second
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    // Cleanup interval on unmount
+    return () => clearInterval(timer);
+  }, []);
+
+  // Formatter for Date and Time
+  const formattedDate = currentDateTime.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+
+  const formattedTime = currentDateTime.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  // Load user-specific tasks from localStorage
+  useEffect(() => {
+    if (currentUser) {
+      const storageKey = `taskflow_tasks_${currentUser.email}`;
+      const savedTasks = localStorage.getItem(storageKey);
+      if (savedTasks) {
+        setTasks(JSON.parse(savedTasks));
+      } else {
+        const defaults = [
+          {
+            _id: "w1",
+            title: "Design CSS Grid Wireframe Layout",
+            description: "Define CSS layout grid columns and spacing.",
+            priority: "High",
+            completed: false,
+          },
+          {
+            _id: "p1",
+            title: "Buy Weekly Grocery Items",
+            description: "Get milk, eggs, bread, and fresh vegetables.",
+            priority: "Low",
+            completed: true,
+          },
+        ];
+        setTasks(defaults);
+        localStorage.setItem(storageKey, JSON.stringify(defaults));
+      }
+    }
+  }, [currentUser]);
+
+  // Save tasks on change
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(`taskflow_tasks_${currentUser.email}`, JSON.stringify(tasks));
+    }
+  }, [tasks, currentUser]);
+
+  // --- AUTH HANDLERS ---
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const users = JSON.parse(localStorage.getItem("taskflow_users")) || [];
+    const found = users.find(
+      (u) => u.email === authEmail.trim().toLowerCase() && u.password === authPassword.trim()
+    );
+
+    if (found) {
+      const sessionData = { name: found.name, email: found.email };
+      localStorage.setItem("taskflow_active_session", JSON.stringify(sessionData));
+      setCurrentUser(sessionData);
+      setView("dashboard");
+      setAuthEmail("");
+      setAuthPassword("");
+    } else {
+      alert("Invalid email or password. Please check your credentials or register.");
+    }
+  };
+
+  const handleRegister = (e) => {
+    e.preventDefault();
+    const trimmedName = authName.trim();
+    const trimmedEmail = authEmail.trim().toLowerCase();
+    const trimmedPassword = authPassword.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedPassword) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    const users = JSON.parse(localStorage.getItem("taskflow_users")) || [];
+    if (users.some((u) => u.email === trimmedEmail)) {
+      alert("An account with this email already exists. Please login.");
+      return;
+    }
+
+    const newUser = { name: trimmedName, email: trimmedEmail, password: trimmedPassword };
+    users.push(newUser);
+    localStorage.setItem("taskflow_users", JSON.stringify(users));
+
+    const sessionData = { name: trimmedName, email: trimmedEmail };
+    localStorage.setItem("taskflow_active_session", JSON.stringify(sessionData));
+    setCurrentUser(sessionData);
+    setView("dashboard");
+
+    setAuthName("");
+    setAuthEmail("");
+    setAuthPassword("");
+    alert("Registration Successful!");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("taskflow_active_session");
+    setCurrentUser(null);
+    setView("login");
+  };
+
+  // --- TASK HANDLERS ---
+  const addTask = (e) => {
+    e.preventDefault();
+    if (!title.trim()) {
+      alert("Please enter a task title");
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      const newTask = {
+        _id: Date.now().toString(),
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        completed: false,
+      };
+      setTasks((prev) => [newTask, ...prev]);
+      setTitle("");
+      setDescription("");
+      setPriority("Medium");
+      setLoading(false);
+    }, 200);
+  };
+
+  const toggleTask = (taskToToggle) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task._id === taskToToggle._id ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+
+  const deleteTask = (id) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    setTasks((prev) => prev.filter((task) => task._id !== id));
+  };
+
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch = (task.title || "").toLowerCase().includes(search.toLowerCase());
+    const matchesFilter =
+      filter === "All" ||
+      (filter === "Pending" && !task.completed) ||
+      (filter === "Completed" && task.completed);
+    return matchesSearch && matchesFilter;
+  });
+
+  const completedCount = tasks.filter((task) => task.completed).length;
+  const pendingCount = tasks.length - completedCount;
+
+  // --- 1. LOGIN VIEW ---
+  if (view === "login") {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <h1>TaskFlow</h1>
+          <h2>Welcome Back</h2>
+          <p>Login to manage your tasks</p>
+          <form onSubmit={handleLogin}>
+            <label htmlFor="login-email">Email Address</label>
+            <input
+              id="login-email"
+              type="email"
+              placeholder="Enter your email"
+              value={authEmail}
+              onChange={(e) => setAuthEmail(e.target.value)}
+              required
+            />
+            <label htmlFor="login-pass">Password</label>
+            <input
+              id="login-pass"
+              type="password"
+              placeholder="Enter password"
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+              required
+            />
+            <button type="submit" className="auth-btn">Login</button>
+          </form>
+          <p className="switch-text">
+            Don't have an account?{" "}
+            <span onClick={() => setView("register")} style={{ color: "#6366f1", cursor: "pointer", fontWeight: "600" }}>
+              Register
+            </span>
+          </p>
         </div>
-        <nav className="nav-menu">
-          <div className="nav-section">
-            <h3>VIEWS</h3>
-            <ul>
-              <li className={currentView === 'board' ? 'active' : ''} onClick={() => setCurrentView('board')}>📋 Kanban Board</li>
-              <li className={currentView === 'schedule' ? 'active' : ''} onClick={() => setCurrentView('schedule')}>📅 Weekly Schedule</li>
-              <li className={currentView === 'workflow' ? 'active' : ''} onClick={() => setCurrentView('workflow')}>⚡ Workflow Guide</li>
-            </ul>
-          </div>
-          <div className="nav-section">
-            <h3>PROJECTS</h3>
-            <ul>
-              {['All', 'Work', 'Personal', 'Study'].map(proj => (
-                <li key={proj} className={selectedProject === proj ? 'active' : ''} onClick={() => setSelectedProject(proj)}>
-                  {proj === 'All' ? '📂 All Projects' : proj === 'Work' ? '💼 Work' : proj === 'Personal' ? '👤 Personal' : '🎓 Study'}
-                </li>
-              ))}
-            </ul>
-          </div>
+      </div>
+    );
+  }
+
+  // --- 2. REGISTER VIEW ---
+  if (view === "register") {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <h1>TaskFlow</h1>
+          <h2>Create Account</h2>
+          <p>Register to manage your tasks</p>
+          <form onSubmit={handleRegister}>
+            <label htmlFor="reg-name">Full Name</label>
+            <input
+              id="reg-name"
+              type="text"
+              placeholder="Enter your name"
+              value={authName}
+              onChange={(e) => setAuthName(e.target.value)}
+              required
+            />
+            <label htmlFor="reg-email">Email Address</label>
+            <input
+              id="reg-email"
+              type="email"
+              placeholder="Enter your email"
+              value={authEmail}
+              onChange={(e) => setAuthEmail(e.target.value)}
+              required
+            />
+            <label htmlFor="reg-pass">Password</label>
+            <input
+              id="reg-pass"
+              type="password"
+              placeholder="Create password"
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+              required
+            />
+            <button type="submit" className="auth-btn">Register</button>
+          </form>
+          <p className="switch-text">
+            Already have an account?{" "}
+            <span onClick={() => setView("login")} style={{ color: "#6366f1", cursor: "pointer", fontWeight: "600" }}>
+              Login
+            </span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 3. MAIN DASHBOARD VIEW ---
+  return (
+    <div className="app">
+      <aside className="sidebar">
+        <h2>TaskFlow</h2>
+        <nav>
+          <a href="#dashboard">🏠 Dashboard</a>
+          <a href="#tasks">📋 My Tasks</a>
+          <a href="#add-task">➕ Add Task</a>
         </nav>
-        <div className="user-profile">
-          <span>{activeUser.name}</span>
-          <button onClick={() => { localStorage.removeItem('active_session'); window.location.href = 'auth.html'; }}>Logout</button>
+        <div className="sidebar-bottom">
+          <button onClick={handleLogout} className="logout-btn">🚪 Logout</button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="main-content">
-        <header className="top-header">
-          <h1>{selectedProject === 'All' ? 'Task Board' : `${selectedProject} Tasks`}</h1>
-          <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>+ New Task</button>
+      <main className="main">
+        <header className="topbar">
+          <div>
+            <h1>Task Management System</h1>
+            <p>Organize your work and achieve your goals.</p>
+          </div>
+
+          {/* Date & Time Widget */}
+          <div className="datetime-widget">
+            <span className="date-text">📅 {formattedDate}</span>
+            <span className="time-text">⏰ {formattedTime}</span>
+          </div>
+
+          <div className="profile">👤 {currentUser?.name || "Student"}</div>
         </header>
 
-        {/* View 1: Kanban Board */}
-        {currentView === 'board' && (
-          <div className="kanban-grid">
-            {['todo', 'in-progress', 'completed'].map(status => (
-              <div 
-                key={status} 
-                className="kanban-column" 
-                data-status={status}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, status)}
+        <section className="stats" id="dashboard">
+          <div className="stat-card purple">
+            <h3>Total Tasks</h3>
+            <h2>{tasks.length}</h2>
+            <p>All your tasks</p>
+          </div>
+          <div className="stat-card green">
+            <h3>Completed</h3>
+            <h2>{completedCount}</h2>
+            <p>Finished tasks</p>
+          </div>
+          <div className="stat-card orange">
+            <h3>Pending</h3>
+            <h2>{pendingCount}</h2>
+            <p>Tasks remaining</p>
+          </div>
+        </section>
+
+        <section className="content">
+          <div className="form-card" id="add-task">
+            <h2>➕ Create New Task</h2>
+            <form onSubmit={addTask}>
+              <label htmlFor="task-title">Task Title</label>
+              <input
+                id="task-title"
+                type="text"
+                placeholder="Enter task title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+
+              <label htmlFor="task-desc">Description</label>
+              <textarea
+                id="task-desc"
+                placeholder="Enter task description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+
+              <label htmlFor="task-priority">Priority</label>
+              <select
+                id="task-priority"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
               >
-                <div className="column-header">
-                  <h3>{status === 'todo' ? 'To Do' : status === 'in-progress' ? 'In Progress' : 'Completed'}</h3>
-                </div>
-                <div className="task-list">
-                  {filteredTasks.filter(t => t.status === status).map(task => (
-                    <div 
-                      key={task.id} 
-                      className={`task-card priority-${task.priority}`} 
-                      draggable 
-                      onDragStart={(e) => e.dataTransfer.setData('text/plain', task.id)}
-                      onClick={() => { setSelectedTask(task); setIsDetailsModalOpen(true); }}
-                    >
-                      <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
-                        <h4 style={{fontSize:'0.95rem', fontWeight:600}}>{task.title}</h4>
-                        <button onClick={(e) => handleDeleteTask(e, task.id)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer', fontSize:'1.1rem'}}>&times;</button>
-                      </div>
-                      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'10px', fontSize:'0.75rem', color:'#64748b'}}>
-                        <span style={{background:'#f1f5f9', padding:'2px 6px', borderRadius:'4px', fontWeight:600}}>{task.project}</span>
-                        <span>🗓️ {task.day || 'Unscheduled'}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
 
-        {/* View 2: Weekly Schedule */}
-        {currentView === 'schedule' && (
-          <div className="schedule-grid">
-            {daysOfWeek.map(day => {
-              const dayTasks = filteredTasks.filter(t => t.day === day);
-              return (
-                <div key={day} className="schedule-day-col">
-                  <div className="schedule-day-header">{day}</div>
-                  <div className="schedule-day-tasks">
-                    {dayTasks.length === 0 ? (
-                      <p style={{fontSize:'0.75rem', color:'#94a3b8', textAlign:'center'}}>No tasks</p>
-                    ) : (
-                      dayTasks.map(t => (
-                        <div key={t.id} className="schedule-item" onClick={() => { setSelectedTask(t); setIsDetailsModalOpen(true); }} style={{cursor:'pointer'}}>
-                          <strong>{t.title}</strong>
-                          <span style={{color:'#64748b', fontSize:'0.7rem'}}>{t.project} | {t.status.toUpperCase()}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* View 3: Workflow Guide */}
-        {currentView === 'workflow' && (
-          <div className="workflow-content">
-            <div className="workflow-card">
-              <h3>1. Prioritize & Assign</h3>
-              <p>Categorize tasks into Work, Personal, or Study projects with custom priority levels and schedules.</p>
-            </div>
-            <div className="workflow-card">
-              <h3>2. Dynamic Execution Strategy</h3>
-              <p>Click any task card to inspect algorithmic hints generated based on keyword matching.</p>
-            </div>
-            <div className="workflow-card">
-              <h3>3. Drag & Drop Progression</h3>
-              <p>Seamlessly drag tasks across Kanban columns to update progress states in real-time.</p>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Create Task Modal */}
-      {isCreateModalOpen && (
-        <div className="modal active">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>Create New Task</h3>
-              <button className="close-btn" onClick={() => setIsCreateModalOpen(false)}>&times;</button>
-            </div>
-            <form onSubmit={handleCreateTask}>
-              <div className="form-group">
-                <label>Task Title</label>
-                <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required placeholder="e.g., Fix Bug" />
-              </div>
-              <div className="form-group">
-                <label>Project Category</label>
-                <select value={newProject} onChange={(e) => setNewProject(e.target.value)}>
-                  <option value="Work">Work</option>
-                  <option value="Personal">Personal</option>
-                  <option value="Study">Study</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Initial Status</label>
-                <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
-                  <option value="todo">To Do</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Priority</label>
-                <select value={newPriority} onChange={(e) => setNewPriority(e.target.value)}>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Assigned Day</label>
-                <select value={newDay} onChange={(e) => setNewDay(e.target.value)}>
-                  {daysOfWeek.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Due Date</label>
-                <input type="date" value={newDeadline} onChange={(e) => setNewDeadline(e.target.value)} required />
-              </div>
-              <div className="modal-footer">
-                <button type="submit" className="btn-primary">Add Task</button>
-              </div>
+              <button type="submit" className="add-btn" disabled={loading}>
+                {loading ? "Adding Task..." : "+ Add Task"}
+              </button>
             </form>
           </div>
-        </div>
-      )}
 
-      {/* Task Details Modal */}
-      {isDetailsModalOpen && selectedTask && (
-        <div className="modal active">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>{selectedTask.title}</h3>
-              <button className="close-btn" onClick={() => setIsDetailsModalOpen(false)}>&times;</button>
+          <div className="tasks-card" id="tasks">
+            <div className="tasks-header">
+              <h2>📋 My Tasks</h2>
+              <span>{filteredTasks.length} Tasks</span>
             </div>
-            <div className="modal-body">
-              <div style={{display:'flex', gap:'10px', alignItems:'center', marginBottom:'15px'}}>
-                <span className="badge">{selectedTask.project}</span>
-                <span className="badge" style={{textTransform:'uppercase'}}>{selectedTask.priority}</span>
+
+            <div className="filters">
+              <input
+                type="text"
+                placeholder="🔍 Search tasks..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+                <option value="All">All</option>
+                <option value="Pending">Pending</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+
+            {filteredTasks.length === 0 ? (
+              <div className="empty">
+                <h3>🎯 No Tasks Found</h3>
+                <p>Create your first task!</p>
               </div>
-              <p style={{fontSize:'0.85rem', color:'#64748b', marginBottom:'15px'}}>🗓️ {selectedTask.day} | Due: {selectedTask.deadline}</p>
-              <div className="hint-box" style={{background:'#f8fafc', borderLeft:'4px solid #3b82f6', padding:'12px', borderRadius:'4px'}}>
-                <h4 style={{fontSize:'0.85rem', color:'#1e293b', marginBottom:'6px'}}>💡 Dynamic Execution Strategy</h4>
-                <p style={{fontSize:'0.85rem', color:'#475569', lineHeight:1.4}}>{getTaskHint(selectedTask.title, selectedTask.project)}</p>
-              </div>
-            </div>
-            <div className="modal-footer" style={{marginTop:'20px', textAlign:'right'}}>
-              <button className="btn-secondary" onClick={() => setIsDetailsModalOpen(false)}>Close</button>
-            </div>
+            ) : (
+              filteredTasks.map((task) => (
+                <div className="task-item" key={task._id}>
+                  <div className="task-info">
+                    <h3 className={task.completed ? "finished" : ""}>{task.title}</h3>
+                    <p>{task.description || "No description"}</p>
+                    <div className="badges">
+                      <span className={`priority ${(task.priority || "Medium").toLowerCase()}`}>
+                        {task.priority || "Medium"} Priority
+                      </span>
+                      <span className={task.completed ? "done" : "pending-badge"}>
+                        {task.completed ? "Completed" : "Pending"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="actions">
+                    <button type="button" className="complete" onClick={() => toggleTask(task)}>
+                      {task.completed ? "↩ Undo" : "✓ Complete"}
+                    </button>
+                    <button type="button" className="delete" onClick={() => deleteTask(task._id)}>
+                      🗑 Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        </div>
-      )}
+        </section>
+
+        <footer>
+          <p>© 2026 Task Management System | TaskFlow</p>
+        </footer>
+      </main>
     </div>
   );
 }
+
+export default App;

@@ -1,0 +1,376 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f1f5f9;
+  color: #111827;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar {
+  width: 298px;
+  min-width: 298px;
+  background: #1e293b;
+  color: #94a3b8;
+  padding: 20px 10px;
+}
+
+.logo {
+  font-size: 29px;
+  font-weight: bold;
+  color: #38bdf8;
+  margin-bottom: 32px;
+}
+
+.logo span {
+  font-size: 27px;
+}
+
+.user-box {
+  background: #0f172a;
+  padding: 20px 15px;
+  border-radius: 8px;
+  margin-bottom: 35px;
+}
+
+.user-box p {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.user-box strong {
+  color: white;
+  font-size: 18px;
+}
+
+.sidebar-section {
+  margin-bottom: 35px;
+}
+
+.sidebar-section h4 {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 18px;
+}
+
+.sidebar-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 17px;
+  padding: 14px 15px;
+  margin-bottom: 4px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.sidebar-item:hover {
+  background: #334155;
+  color: white;
+}
+
+.sidebar-item.active {
+  background: #334155;
+  color: white;
+}
+
+.sidebar-icon {
+  margin-right: 10px;
+}
+
+/* MAIN CONTENT */
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  background: #f1f5f9;
+}
+
+/* HEADER */
+
+.top-header {
+  height: 75px;
+  background: white;
+  padding: 0 25px 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.top-header h1 {
+  font-size: 30px;
+  color: #0f172a;
+}
+
+.new-task-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.new-task-btn:hover {
+  background: #1d4ed8;
+}
+
+/* BOARD - SIDE BY SIDE */
+
+.board {
+  display: grid;
+
+  /* THREE COLUMNS ALWAYS SIDE BY SIDE */
+  grid-template-columns: repeat(3, minmax(280px, 1fr));
+
+  gap: 25px;
+  padding: 30px;
+  align-items: stretch;
+
+  /* Horizontal scrolling if screen is small */
+  overflow-x: auto;
+}
+
+.board-column {
+  background: #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+  min-height: calc(100vh - 105px);
+  min-width: 280px;
+}
+
+.board-column h2 {
+  font-size: 22px;
+  color: #334155;
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.column-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* TASK CARDS */
+
+.task-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px 18px;
+  border-left: 5px solid #ef4444;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+}
+
+.task-card:nth-child(3n + 2) {
+  border-left-color: #f59e0b;
+}
+
+.task-card:nth-child(3n) {
+  border-left-color: #10b981;
+}
+
+.task-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 18px;
+  line-height: 1.5;
+  color: #0f172a;
+  margin-bottom: 20px;
+}
+
+.task-title span {
+  overflow-wrap: anywhere;
+}
+
+.delete-btn {
+  border: none;
+  background: transparent;
+  color: #ef4444;
+  font-size: 23px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.delete-btn:hover {
+  color: #b91c1c;
+}
+
+/* TASK DETAILS */
+
+.task-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.category {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 5px 9px;
+  border-radius: 5px;
+}
+
+.task-day {
+  white-space: nowrap;
+}
+
+/* COMPLETE BUTTON */
+
+.complete-btn {
+  margin-top: 15px;
+  width: 100%;
+  padding: 10px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.complete-btn:hover {
+  background: #059669;
+}
+
+/* COMPLETED TASK */
+
+.completed-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.completed-label {
+  color: #059669;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.reopen-btn {
+  padding: 6px 10px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 5px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.reopen-btn:hover {
+  background: #e2e8f0;
+}
+
+/* MODAL */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  width: 420px;
+  max-width: 100%;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal h2 {
+  margin-bottom: 20px;
+  color: #0f172a;
+}
+
+.modal form {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal label {
+  margin-bottom: 7px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.modal input,
+.modal select {
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.save-btn,
+.cancel-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: #2563eb;
+  color: white;
+}
+
+.cancel-btn {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* RESPONSIVE DESIGN */
+
+@media (max-width: 800px) {
+  .board {
+    grid-template-columns: repeat(3, 280px);
+    overflow-x: auto;
+  }
+
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+  }
+}
